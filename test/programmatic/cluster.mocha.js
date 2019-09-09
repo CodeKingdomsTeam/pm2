@@ -9,15 +9,12 @@ var Plan   = require('../helpers/plan.js');
 process.chdir(__dirname);
 
 describe('Cluster programmatic tests', function() {
-  this.timeout(5000);
-
   var pm2 = new PM2.custom({
-    cwd : '../fixtures',
-    independent : true
+    cwd : '../fixtures'
   });
 
   after(function(done) {
-    pm2.destroy(done)
+    pm2.kill(done)
   });
 
   describe('Start with different instances number parameter', function() {
@@ -152,6 +149,7 @@ describe('Cluster programmatic tests', function() {
       pm2.start({
         script    : './echo.js',
         listen_timeout : 1000,
+        exec_mode: 'cluster',
         instances : 1,
         name      : 'echo'
       }, done);
@@ -165,7 +163,7 @@ describe('Cluster programmatic tests', function() {
       });
     });
 
-    it('should take listen timeout into account', function(done) {
+    it('should take listen_timeout into account', function(done) {
       var called = false;
       var plan = new Plan(3, done);
 

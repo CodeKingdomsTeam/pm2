@@ -5,8 +5,6 @@ var PM2 = require('../..');
 var should = require('should');
 
 describe('API checks', function() {
-  this.timeout(1000);
-
   describe('PM2 API case#1', function() {
     before(function(done) {
       PM2.delete('all', function() { done() });
@@ -252,12 +250,11 @@ describe('API checks', function() {
     var pm2;
 
     after(function(done) {
-      pm2.destroy(done);
+      pm2.kill(done);
     });
 
     it('should create new custom PM2 instance', function() {
       pm2 = new PM2.custom({
-        independent : true,
         daemon_mode : true
       });
       should.exists(pm2.pm2_home);
@@ -293,12 +290,11 @@ describe('API checks', function() {
     var pm2;
 
     after(function(done) {
-      pm2.destroy(done);
+      pm2.kill(done);
     });
 
     it('should create new custom PM2 instance', function() {
       pm2 = new PM2.custom({
-        independent : true,
         daemon_mode : false
       });
 
@@ -318,7 +314,6 @@ describe('API checks', function() {
     });
 
     it('Should start up modules', function(done) {
-      this.timeout(5000);
       PM2.connect(true, function(err) {
         should(err).be.null();
 

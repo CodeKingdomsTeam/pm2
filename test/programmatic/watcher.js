@@ -47,11 +47,8 @@ function errShouldBeNull(err) {
 
 describe('Watcher', function() {
   var pm2 = new PM2.custom({
-    independent : true,
     cwd : __dirname + '/../fixtures/watcher'
   });
-
-  this.timeout(2500)
 
   after(function(cb) {
     pm2.destroy(function() {
@@ -174,10 +171,20 @@ describe('Watcher', function() {
 
       pm2.describe('server-watch', function(err, d) {
         should(d[0].pm2_env.restart_time).eql(2)
-        fs.unlink(path)
+        fs.unlinkSync(path)
         return cb()
       })
     })
+  })
+
+  it('should work with watch_delay', function(cb) {
+    testPM2Env('server-watch:online')({watch: true, watch_delay: 4000}, cb);
+    pm2.start(extend(json, {watch: true, watch_delay: 4000}), errShouldBeNull);
+  })
+
+  it('should not crash with watch_delay without watch', function(cb) {
+    testPM2Env('server-watch:online')({watch_delay: 4000}, cb);
+    pm2.start(extend(json, {watch_delay: 4000}), errShouldBeNull);
   })
 
   /**

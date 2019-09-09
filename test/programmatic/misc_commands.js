@@ -9,12 +9,11 @@ var cst = require('../../constants.js');
 
 describe('Misc commands', function() {
   var pm2 = new PM2.custom({
-    independent : true,
     cwd : __dirname + '/../fixtures'
   });
 
   after(function(done) {
-    pm2.destroy(done);
+    pm2.kill(done);
   });
 
   before(function(done) {
@@ -34,7 +33,7 @@ describe('Misc commands', function() {
       should(err).be.null();
       done();
     });
-  }); 
+  });
 
   it('should restart them', function(done) {
     pm2.restart('all', function(err, data) {

@@ -6,6 +6,7 @@ var fs = require('fs');
 var path = require('path');
 var should = require('should');
 var Common = require('../../lib/Common');
+var eachLimit = require('async/eachLimit');
 
 var cst = require('../../constants.js');
 
@@ -55,12 +56,10 @@ function getConf4() {
   });
 }
 
-var async = require('async');
-
 function deleteAll(data, cb) {
   var processes = God.getFormatedProcesses();
 
-  async.eachLimit(processes, cst.CONCURRENT_ACTIONS, function(proc, next) {
+  eachLimit(processes, cst.CONCURRENT_ACTIONS, function(proc, next) {
     console.log('Deleting process %s', proc.pm2_env.pm_id);
     God.deleteProcessId(proc.pm2_env.pm_id, function() {
       return next();
@@ -187,7 +186,6 @@ describe('God', function() {
   });
 
   describe('Multi launching', function() {
-
     before(function(done) {
       deleteAll({}, function(err, dt) {
         done();
@@ -195,15 +193,12 @@ describe('God', function() {
     });
 
     afterEach(function(done) {
-      this.timeout(5000);
       deleteAll({}, function(err, dt) {
         done();
       });
     });
 
     it('should launch multiple processes depending on CPUs available', function(done) {
-      this.timeout(5000);
-
       God.prepare(Common.prepareAppConf({cwd : process.cwd() }, {
         script : '../fixtures/echo.js',
         name : 'child',
@@ -260,4 +255,52 @@ describe('God', function() {
     });
   });
 
+  it('should get monitor data', function(done) {
+    var f = require('child_process').fork('../fixtures/echo.js')
+
+    var processes = [
+      // stopped status
+      {
+        pm2_env: {status: cst.STOPPED_STATUS}
+      },
+      // axm pid
+      {
+        pm2_env: {
+          status: cst.ONLINE_STATUS, axm_options: {pid: process.pid}
+        }
+      },
+      // axm pid is NaN
+      {
+        pm2_env: {
+          status: cst.ONLINE_STATUS, axm_options: {pid: 'notanumber'}
+        }
+      },
+      {
+        pm2_env: {
+          status: cst.ONLINE_STATUS
+        },
+        pid: f.pid
+      }
+    ]
+
+    // mock
+    var g = {
+      getFormatedProcesses: function() {
+        return processes
+      }
+    }
+
+    require('../../lib/God/ActionMethods.js')(g)
+
+    g.getMonitorData({}, function(err, procs) {
+      should(err).be.null();
+      procs.length.should.be.equal(processes.length);
+      procs[0].monit.should.be.deepEqual({memory: 0, cpu: 0});
+      procs[1].monit.memory.should.be.greaterThan(0);
+      procs[2].monit.should.be.deepEqual({memory: 0, cpu: 0});
+      procs[3].monit.memory.should.be.greaterThan(0);
+      f.kill()
+      done()
+    })
+  });
 });

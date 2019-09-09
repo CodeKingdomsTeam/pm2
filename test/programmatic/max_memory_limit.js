@@ -9,17 +9,14 @@ var path   = require('path');
 // Change to current folder
 
 describe('Max memory restart programmatic', function() {
-  this.timeout(10000);
-
   var proc1 = null;
   var procs = [];
   var pm2 = new PM2.custom({
-    cwd : __dirname + '/../fixtures/json-reload/',
-    independent : true
+    cwd : __dirname + '/../fixtures/json-reload/'
   });
 
   after(function(done) {
-    pm2.destroy(done)
+    pm2.kill(done)
   });
 
   afterEach(function(done) {
@@ -78,7 +75,7 @@ describe('Max memory restart programmatic', function() {
 
         setTimeout(function() {
           pm2.list(function(err, ret) {
-            should(err).be.null();;
+            should(err).be.null();
             ret[0].pm2_env.restart_time.should.not.eql(0);
             done();
           });

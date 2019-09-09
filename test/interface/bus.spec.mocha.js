@@ -1,8 +1,11 @@
 
 var should = require('should');
-var Ipm2   = require('../../lib/Interactor/pm2-interface');
 var PM2    = require('../..');
 var Plan   = require('../helpers/plan.js');
+
+if (require('semver').lt(process.version, '6.0.0')) {
+  return process.exit(0)
+}
 
 const PATH_FIXTURES = process.cwd() + '/test/interface/fixtures/';
 
@@ -59,16 +62,13 @@ process.on('uncaughtException', function(e) {
 });
 
 describe('PM2 BUS / RPC', function() {
-  this.timeout(5000);
-
   var pm2 = new PM2.custom({
-    independent : true,
     cwd         : __dirname + '/../fixtures/interface'
   });
   var pm2_bus;
 
   after(function(done) {
-    pm2.destroy(done);
+    pm2.delete('all', () => done());
   });
 
   before(function(done) {
@@ -131,9 +131,12 @@ describe('PM2 BUS / RPC', function() {
 
     it('should (process:exception)', function(done) {
       var plan = new Plan(1, done);
+      var called = false
 
       pm2_bus.on('*', function(event, data) {
         if (event == 'process:exception') {
+          if (called) return
+          called = true
           data.should.have.properties(ERROR_EVENT);
           data.process.should.have.properties(PROCESS_ARCH);
           plan.ok(true);
@@ -146,13 +149,14 @@ describe('PM2 BUS / RPC', function() {
     });
 
     it('should (process:exception) with promise', function(done) {
-      var plan = new Plan(1, done);
-
+      var called = false
       pm2_bus.on('*', function(event, data) {
         if (event == 'process:exception') {
+          if (called) return
+          called = true
           data.should.have.properties(ERROR_EVENT);
           data.process.should.have.properties(PROCESS_ARCH);
-          plan.ok('true');
+          return done()
         }
       });
 
@@ -162,8 +166,11 @@ describe('PM2 BUS / RPC', function() {
     });
 
     it('should (human:event)', function(done) {
+      var called = false
       pm2_bus.on('*', function(event, data) {
         if (event == 'human:event') {
+          if (called) return
+          called = true
           data.should.have.properties(HUMAN_EVENT);
           data.process.should.have.properties(PROCESS_ARCH);
           return done();
@@ -171,20 +178,6 @@ describe('PM2 BUS / RPC', function() {
       });
 
       pm2.start('./human_event.js', {instances : 1}, function(err, data) {
-        should(err).be.null();
-      });
-    });
-
-    it('should (transaction:http)', function(done) {
-      pm2_bus.on('*', function(event, data) {
-        if (event == 'http:transaction') {
-          data.should.have.properties(TRANSACTION_HTTP_EVENT);
-          data.process.should.have.properties(PROCESS_ARCH);
-          done();
-        }
-      });
-
-      pm2.start('./http_transaction.js', {instances : 1}, function(err, data) {
         should(err).be.null();
       });
     });

@@ -7,7 +7,6 @@ var fs     = require('fs');
 var path   = require('path');
 
 describe('Programmatic log feature test', function() {
-
   var proc1 = null;
   var procs = [];
 
@@ -16,8 +15,6 @@ describe('Programmatic log feature test', function() {
   });
 
   before(function(done) {
-    this.timeout(5000);
-
     pm2.delete('all', function() {
       done();
     });
@@ -36,7 +33,8 @@ describe('Programmatic log feature test', function() {
       pm2.start({
         script: './echo.js',
         error_file : 'error-echo.log',
-        out_file   : 'out-echo.log'
+        out_file   : 'out-echo.log',
+        merge_logs: false
       }, function(err, procs) {
         should(err).be.null();
 

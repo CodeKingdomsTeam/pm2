@@ -1,8 +1,11 @@
 
 var should = require('should');
-var Ipm2   = require('../../lib/Interactor/pm2-interface');
 var PM2    = require('../..');
 var Plan   = require('../helpers/plan.js');
+
+if (require('semver').lt(process.version, '6.0.0')) {
+  return process.exit(0)
+}
 
 var PROCESS_ARCH  = Object.keys({
   pm_id  : 0,
@@ -57,16 +60,13 @@ process.on('uncaughtException', function(e) {
 });
 
 describe('PM2 BUS / RPC', function() {
-  this.timeout(5000);
-
   var pm2 = new PM2.custom({
-    independent : true,
     cwd         : __dirname + '/../fixtures/interface'
   });
   var pm2_bus;
 
   after(function(done) {
-    pm2.destroy(done);
+    pm2.delete('all', () => done());
   });
 
   before(function(done) {
@@ -91,7 +91,6 @@ describe('PM2 BUS / RPC', function() {
       var plan = new Plan(2, done);
 
       pm2_bus.on('*', function(event, data) {
-        console.log(event);
         if (event == 'process:event') {
           event.should.eql('process:event');
           data.should.have.properties(PROCESS_EVENT);
@@ -175,22 +174,6 @@ describe('PM2 BUS / RPC', function() {
         should(err).be.null();
       });
     });
-
-    it('should (transaction:http)', function(done) {
-
-      pm2_bus.on('*', function(event, data) {
-        if (event == 'http:transaction') {
-          data.should.have.properties(TRANSACTION_HTTP_EVENT);
-          data.process.should.have.properties(PROCESS_ARCH);
-          done();
-        }
-      });
-
-      pm2.start('./http_transaction.js', {}, function(err, data) {
-        should(err).be.null();
-      });
-    });
-
   });
 
 });
